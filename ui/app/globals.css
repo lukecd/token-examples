@@ -1,0 +1,70 @@
+@import "tailwindcss";
+@plugin "daisyui";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-title: var(--font-title);
+  --font-ui: var(--font-ui);
+}
+
+/* DaisyUI custom theme: celestia */
+:root[data-theme="celestia"] {
+  /* base */
+  --b1: 243 243 243;   /* #F3F3F3 */
+  --bc: 31 29 38;      /* #1F1D26 (content) */
+
+  /* brand */
+  --p: 53 163 90;      /* #35A35A primary */
+  --pc: 255 255 255;
+  --s: 37 88 32;       /* #255820 secondary */
+  --sc: 255 255 255;
+  --a: 198 184 255;    /* #C6B8FF accent (lavender) */
+  --ac: 31 29 38;
+
+  /* neutral */
+  --n: 31 42 26;       /* #1F2A1A dark olive */
+  --nc: 255 255 255;
+
+  /* states */
+  --in: 78 201 192;    /* #4EC9C0 info */
+  --su: 53 163 90;     /* success */
+  --wa: 255 189 72;    /* #FFBD48 warning */
+  --er: 255 63 174;    /* #FF3FAE error */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-ui), Arial, Helvetica, sans-serif;
+}
+
+/* Headings use League Spartan */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-title), Arial, Helvetica, sans-serif;
+}
+
+/* Background image for the whole app */
+html, body {
+  min-height: 100%;
+}
+
+body {
+  background-image: url('/edenSwap.jpg');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-attachment: fixed;
+}
