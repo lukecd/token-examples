@@ -2,7 +2,7 @@ import { TokenMetaCard } from "./components/TokenMetaCard";
 import { SwapCard } from "./components/SwapCard";
 import { Portfolio } from "./components/Portfolio";
 import { TopBar } from "./components/TopBar";
-import Image from "next/image";
+import GlitchLogo from "./components/GlitchLogo";
 
 export default function Home() {
   return (
@@ -10,14 +10,9 @@ export default function Home() {
       <TopBar />
       <header className="max-w-5xl mx-auto mb-8 flex items-center justify-center">
         <div className="flex items-center justify-center">
-          <Image 
-            src="/edenSwapLogo.png" 
-            alt="EdenSwap" 
-            width={200}
-            height={80}
-            className="h-20 sm:h-35 w-auto drop-shadow-[0_10px_6px_rgba(78,201,192,1)]"
-            priority
-          />
+          <div className="drop-shadow-[0_10px_6px_rgba(78,201,192,1)]">
+            <GlitchLogo />
+          </div>
         </div>
       </header>
       <main className="max-w-5xl mx-auto space-y-6">
@@ -27,6 +22,11 @@ export default function Home() {
         </div>
         <Portfolio />
       </main>
+      <footer className="max-w-5xl mx-auto mt-8 text-center">
+        <p className="text-sm text-base-content/60">
+          This is a demo environment for educational purposes. All tokens are testnet-only and have no real value.
+        </p>
+      </footer>
     </div>
   );
 }

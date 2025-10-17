@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useContractWrite } from "../hooks/useContractWrite";
 import { useUserBalance, useUserEthBalance } from "../hooks/useContractData";
 import { formatNumber } from "../../lib/format";
+import TVStaticGlitch from "./TVStaticGlitch";
 
 type SwapCardProps = {
   baseLabel: string;
@@ -84,7 +85,8 @@ export function SwapCard({ baseLabel, quoteLabel }: SwapCardProps) {
      (!isBuyMode && tokenAmount && parseFloat(tokenAmount) > 0));
 
   return (
-    <div className="card w-full max-w-xl bg-base-100 shadow">
+    <div className="card w-full max-w-xl bg-base-100 shadow relative">
+      <TVStaticGlitch isActive={isTransactionLoading} />
       <div className="card-body">
         <div className="flex justify-between items-center mb-4">
           <h2 className="card-title">Swap</h2>
