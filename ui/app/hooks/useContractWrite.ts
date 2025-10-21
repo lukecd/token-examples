@@ -5,7 +5,7 @@ import { useState } from "react";
 import { 
   readCalculateCost,
   readCalculateRefund,
-  writeMintTokensWithEth,
+  writeMintTokens,
   writeBurnTokens,
   linearBondingTokenAbi,
   getContractAddress
@@ -22,7 +22,7 @@ export function useContractWrite() {
   const [sellState, setSellState] = useState<TransactionState>("idle");
   const [error, setError] = useState<string | null>(null);
 
-  const buyTokens = async (ethAmount: string, minTokens: string = "0") => {
+  const buyTokens = async (ethAmount: string, slippagePercent: string = "0") => {
     if (!publicClient || !walletClient || !address) {
       setError("Wallet not connected");
       return;
@@ -33,12 +33,24 @@ export function useContractWrite() {
 
     try {
       const ethWei = BigInt(Math.floor(parseFloat(ethAmount) * 1e18));
-      
-      // Use mintTokensWithEth for automatic token calculation
-      const receipt = await writeMintTokensWithEth({
+
+      // Estimate tokens out via onchain formula using binary search (same as calculateTokensForEth)
+      const tokensOutStr = await calculateTokensForEth(ethAmount);
+      const tokensOut = parseFloat(tokensOutStr || "0");
+      const tokensOutWei = BigInt(Math.floor(tokensOut * 1e18));
+
+      // Compute minTokenOut by applying slippage percent (e.g., 1% => 0.99 * expected)
+      const slip = Math.max(0, Math.min(100, parseFloat(slippagePercent || "0")));
+      const minOut = tokensOut * (1 - slip / 100);
+      const minTokenOutWei = BigInt(Math.floor(minOut * 1e18));
+
+      // Call explicit mint(amount, minTokenOut) using the expected amount
+      const receipt = await writeMintTokens({
         publicClient,
         walletClient,
         account: address,
+        amount: tokensOutWei,
+        minTokenOut: minTokenOutWei,
         value: ethWei,
       });
 

@@ -3,6 +3,7 @@ pragma solidity ^0.8.27;
 
 import {Test, console2} from "forge-std/Test.sol";
 import {LinearBondingToken} from "../src/LinearBondingToken.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 // Reentrancy attack contract
 contract ReentrancyAttacker {
@@ -61,6 +62,10 @@ contract LinearBondingTokenTest is Test {
     }
 
     function testSequentialBuys() public {
+        // Use an EOA for buys so refunds work properly
+        address bob = makeAddr("bob");
+        vm.deal(bob, 10 ether);
+
         uint256 buyAmount = 0.1 ether; // 0.1 ETH per buy
         uint256 totalTokensBought = 0;
         uint256 previousPrice = 0;
@@ -70,14 +75,17 @@ contract LinearBondingTokenTest is Test {
 
         for (uint256 i = 0; i < 10; i++) {
             // Record balance before buy
-            uint256 balanceBefore = token.balanceOf(address(this));
+            uint256 balanceBefore = token.balanceOf(bob);
 
-            // Make the buy
-            token.mintTokensWithEth{value: buyAmount}();
+            // Make the buy using EOA
+            uint256 expectedTokens = token.calculateTokensForEth(buyAmount);
+            // Use 0% slippage protection (no protection) for tests
+            uint256 minTokens = 0;
+            vm.prank(bob);
+            token.mintTokens{value: buyAmount}(expectedTokens, minTokens);
 
             // Calculate tokens bought in this transaction
-            uint256 tokensBought = token.balanceOf(address(this)) -
-                balanceBefore;
+            uint256 tokensBought = token.balanceOf(bob) - balanceBefore;
             totalTokensBought += tokensBought;
 
             // Get current price after the buy
@@ -112,8 +120,9 @@ contract LinearBondingTokenTest is Test {
         vm.deal(bob, 100 ether);
 
         // 1) Seed the curve with a ~5 ETH buy
+        uint256 expectedTokens = token.calculateTokensForEth(5 ether);
         vm.prank(bob);
-        token.mintTokensWithEth{value: 5 ether}();
+        token.mintTokens{value: 5 ether}(expectedTokens, expectedTokens);
         uint256 totalBought = token.balanceOf(bob);
         assertGt(totalBought, 0, "Should have minted some tokens");
 
@@ -157,8 +166,9 @@ contract LinearBondingTokenTest is Test {
 
         // 10 slow buys
         for (uint256 i = 0; i < 10; i++) {
+            uint256 expectedTokens = token.calculateTokensForEth(buyAmt);
             vm.prank(bob);
-            token.mintTokensWithEth{value: buyAmt}();
+            token.mintTokens{value: buyAmt}(expectedTokens, expectedTokens);
         }
 
         // Baseline after 10th buy
@@ -167,8 +177,9 @@ contract LinearBondingTokenTest is Test {
 
         // 11th buy
         uint256 balBefore = token.balanceOf(bob);
+        uint256 expectedTokens11 = token.calculateTokensForEth(buyAmt);
         vm.prank(bob);
-        token.mintTokensWithEth{value: buyAmt}();
+        token.mintTokens{value: buyAmt}(expectedTokens11, expectedTokens11);
         uint256 balAfter = token.balanceOf(bob);
         uint256 bought11 = balAfter - balBefore;
         assertGt(bought11, 0, "11th buy should mint > 0 tokens");
@@ -223,7 +234,7 @@ contract LinearBondingTokenTest is Test {
         uint256 expected = token.calculateCost(amount);
 
         vm.prank(bob);
-        token.mintTokens{value: expected + 1 ether}(amount);
+        token.mintTokens{value: expected + 1 ether}(amount, amount);
 
         assertEq(token.balanceOf(bob), amount);
         assertEq(address(token).balance, expected);
@@ -234,22 +245,20 @@ contract LinearBondingTokenTest is Test {
         vm.deal(bob, 50 ether);
 
         // seed
+        uint256 expectedTokens = token.calculateTokensForEth(20 ether);
         vm.prank(bob);
-        token.mintTokensWithEth{value: 20 ether}();
+        token.mintTokens{value: 20 ether}(expectedTokens, expectedTokens);
         uint256 s0 = token.totalSupply();
         uint256 x = s0 / 7;
 
-        // expected refund via area difference
+        // expected refund via precise 18-decimal area difference (matches contract)
         uint256 a = token.slope();
         uint256 b = token.initialPrice();
-        uint256 sTok = s0 / 1e18;
-        uint256 xTok = x / 1e18;
-        uint256 totalBefore = (a * sTok * sTok) / 2 + b * sTok;
-        uint256 totalAfter = (a * (sTok - xTok) * (sTok - xTok)) /
-            2 +
-            b *
-            (sTok - xTok);
-        uint256 expected = totalBefore - totalAfter;
+        // Prices at endpoints over 18-decimal supply
+        uint256 pLow = b + (a * (s0 - x)) / 1e18;
+        uint256 pHigh = b + (a * s0) / 1e18;
+        // Average price times amount, scaled by 1e18 (floor via truncation)
+        uint256 expected = ((pLow + pHigh) * x) / (2 * 1e18);
 
         uint256 bobBefore = bob.balance;
         vm.prank(bob);
@@ -266,30 +275,76 @@ contract LinearBondingTokenTest is Test {
         uint256 need = token.calculateCost(amount);
         vm.expectRevert("Insufficient ETH sent");
         vm.prank(bob);
-        token.mintTokens{value: need - 1}(amount);
+        token.mintTokens{value: need - 1}(amount, amount);
     }
 
     function testZeroAmountMintReverts() public {
         address bob = makeAddr("bob");
         vm.deal(bob, 1 ether);
 
-        // Test minting 0 tokens - this should work but cost 0 ETH
+        // Test minting 0 tokens - this should revert with "Cannot mint zero tokens"
+        vm.expectRevert("Cannot mint zero tokens");
         vm.prank(bob);
-        token.mintTokens{value: 0}(0);
+        token.mintTokens{value: 0}(0, 0);
+    }
 
-        // Should have 0 tokens and 0 ETH spent
-        assertEq(token.balanceOf(bob), 0);
-        assertEq(address(token).balance, 0);
+    function testSlippageProtection() public {
+        address bob = makeAddr("bob");
+        vm.deal(bob, 10 ether);
+
+        uint256 amount = 1e18; // 1 token
+        uint256 cost = token.calculateCost(amount);
+
+        // Test with minTokenOut equal to amount - should succeed
+        vm.prank(bob);
+        token.mintTokens{value: cost}(amount, amount);
+        assertEq(token.balanceOf(bob), amount);
+
+        // Reset for next test
+        vm.prank(bob);
+        token.burnTokens(amount);
+
+        // Test with minTokenOut greater than amount - should revert
+        vm.expectRevert("Slippage: fewer tokens than expected");
+        vm.prank(bob);
+        token.mintTokens{value: cost}(amount, amount + 1);
+    }
+
+    function testSlippageProtectionWithZeroMinTokenOut() public {
+        address bob = makeAddr("bob");
+        vm.deal(bob, 10 ether);
+
+        uint256 amount = 1e18; // 1 token
+        uint256 cost = token.calculateCost(amount);
+
+        // Test with minTokenOut = 0 - should succeed (no slippage protection)
+        vm.prank(bob);
+        token.mintTokens{value: cost}(amount, 0);
+        assertEq(token.balanceOf(bob), amount);
+    }
+
+    function testSlippageProtectionWithPartialMinTokenOut() public {
+        address bob = makeAddr("bob");
+        vm.deal(bob, 10 ether);
+
+        uint256 amount = 1e18; // 1 token
+        uint256 cost = token.calculateCost(amount);
+        uint256 minTokenOut = amount / 2; // 50% slippage tolerance
+
+        // Test with minTokenOut = amount/2 - should succeed
+        vm.prank(bob);
+        token.mintTokens{value: cost}(amount, minTokenOut);
+        assertEq(token.balanceOf(bob), amount);
     }
 
     function testZeroEthMintWithEthReverts() public {
         address bob = makeAddr("bob");
         vm.deal(bob, 1 ether);
 
-        // Test mintTokensWithEth with 0 ETH should revert
-        vm.expectRevert("Must send more than 0 ETH");
+        // Test mintTokens with 0 ETH should revert
+        vm.expectRevert("Cannot mint zero tokens");
         vm.prank(bob);
-        token.mintTokensWithEth{value: 0}();
+        token.mintTokens{value: 0}(0, 0);
     }
 
     function testBurnZeroTokensReverts() public {
@@ -297,8 +352,9 @@ contract LinearBondingTokenTest is Test {
         vm.deal(bob, 10 ether);
 
         // First buy some tokens
+        uint256 expectedTokens = token.calculateTokensForEth(1 ether);
         vm.prank(bob);
-        token.mintTokensWithEth{value: 1 ether}();
+        token.mintTokens{value: 1 ether}(expectedTokens, expectedTokens);
         uint256 balanceBefore = token.balanceOf(bob);
 
         // Try to burn 0 tokens - this should work but refund 0 ETH
@@ -316,8 +372,9 @@ contract LinearBondingTokenTest is Test {
         vm.deal(bob, 10 ether);
 
         // First buy some tokens
+        uint256 expectedTokens = token.calculateTokensForEth(1 ether);
         vm.prank(bob);
-        token.mintTokensWithEth{value: 1 ether}();
+        token.mintTokens{value: 1 ether}(expectedTokens, expectedTokens);
         uint256 balance = token.balanceOf(bob);
 
         // Try to burn more than balance
@@ -331,8 +388,9 @@ contract LinearBondingTokenTest is Test {
         vm.deal(bob, 10 ether);
 
         // First buy some tokens
+        uint256 expectedTokens = token.calculateTokensForEth(1 ether);
         vm.prank(bob);
-        token.mintTokensWithEth{value: 1 ether}();
+        token.mintTokens{value: 1 ether}(expectedTokens, expectedTokens);
         uint256 totalSupply = token.totalSupply();
 
         // Try to burn more than total supply - should revert with insufficient balance
@@ -349,8 +407,9 @@ contract LinearBondingTokenTest is Test {
         vm.deal(address(attacker), 10 ether);
 
         // Attacker buys tokens
+        uint256 expectedTokens = token.calculateTokensForEth(2 ether);
         vm.prank(address(attacker));
-        token.mintTokensWithEth{value: 2 ether}();
+        token.mintTokens{value: 2 ether}(expectedTokens, expectedTokens);
 
         uint256 attackerBalance = token.balanceOf(address(attacker));
         assertGt(attackerBalance, 0, "Attacker should have tokens");
@@ -370,7 +429,7 @@ contract LinearBondingTokenTest is Test {
         uint256 cost = token.calculateCost(smallAmount);
 
         vm.prank(bob);
-        token.mintTokens{value: cost}(smallAmount);
+        token.mintTokens{value: cost}(smallAmount, smallAmount);
 
         assertEq(token.balanceOf(bob), smallAmount);
         assertEq(address(token).balance, cost);
@@ -422,8 +481,9 @@ contract LinearBondingTokenTest is Test {
         vm.deal(bob, 10 ether);
 
         // Buy some tokens
+        uint256 expectedTokens = token.calculateTokensForEth(1 ether);
         vm.prank(bob);
-        token.mintTokensWithEth{value: 1 ether}();
+        token.mintTokens{value: 1 ether}(expectedTokens, expectedTokens);
 
         uint256 priceAfterBuy = token.getCurrentPrice();
         uint256 supplyAfterBuy = token.totalSupply();
@@ -472,7 +532,7 @@ contract LinearBondingTokenTest is Test {
 
         uint256 balanceBefore = address(token).balance;
         vm.prank(bob);
-        token.mintTokens{value: expectedCost + 1 ether}(amount);
+        token.mintTokens{value: expectedCost + 1 ether}(amount, amount);
         uint256 balanceAfter = address(token).balance;
 
         uint256 actualCost = balanceAfter - balanceBefore;
@@ -488,8 +548,9 @@ contract LinearBondingTokenTest is Test {
         vm.deal(bob, 10 ether);
 
         // Buy some tokens
+        uint256 expectedTokens = token.calculateTokensForEth(1 ether);
         vm.prank(bob);
-        token.mintTokensWithEth{value: 1 ether}();
+        token.mintTokens{value: 1 ether}(expectedTokens, expectedTokens);
 
         uint256 balance = token.balanceOf(bob);
 
@@ -512,8 +573,9 @@ contract LinearBondingTokenTest is Test {
         vm.deal(bob, 1000 ether);
 
         // Try to buy with a very large amount of ETH that might cause overflow
+        uint256 expectedTokens = token.calculateTokensForEth(100 ether);
         vm.prank(bob);
-        token.mintTokensWithEth{value: 100 ether}();
+        token.mintTokens{value: 100 ether}(expectedTokens, expectedTokens);
 
         // The function should handle this gracefully
         assertGt(token.balanceOf(bob), 0, "Should have minted some tokens");
@@ -526,8 +588,9 @@ contract LinearBondingTokenTest is Test {
         vm.deal(bob, 1 ether);
 
         // This should work fine with the current slope
+        uint256 expectedTokens = token.calculateTokensForEth(0.1 ether);
         vm.prank(bob);
-        token.mintTokensWithEth{value: 0.1 ether}();
+        token.mintTokens{value: 0.1 ether}(expectedTokens, expectedTokens);
 
         assertGt(token.balanceOf(bob), 0, "Should work with current slope");
     }
@@ -538,8 +601,9 @@ contract LinearBondingTokenTest is Test {
         address bob = makeAddr("bob");
         vm.deal(bob, 1 ether);
 
+        uint256 expectedTokens = token.calculateTokensForEth(0.1 ether);
         vm.prank(bob);
-        token.mintTokensWithEth{value: 0.1 ether}();
+        token.mintTokens{value: 0.1 ether}(expectedTokens, expectedTokens);
 
         assertGt(token.balanceOf(bob), 0, "Should work with non-zero slope");
     }
@@ -550,8 +614,7 @@ contract LinearBondingTokenTest is Test {
 
         // Try to buy with very small amount of ETH
         vm.expectRevert("Not enough ETH to buy tokens");
-        vm.prank(bob);
-        token.mintTokensWithEth{value: 1 wei}();
+        token.calculateTokensForEth(1 wei);
     }
 
     function testCalculateRefundWithZeroSupply() public view {
@@ -569,8 +632,9 @@ contract LinearBondingTokenTest is Test {
         vm.deal(bob, 10 ether);
 
         // Buy some tokens
+        uint256 expectedTokens = token.calculateTokensForEth(1 ether);
         vm.prank(bob);
-        token.mintTokensWithEth{value: 1 ether}();
+        token.mintTokens{value: 1 ether}(expectedTokens, expectedTokens);
         uint256 totalSupply = token.totalSupply();
 
         // Try to calculate refund for more than total supply
@@ -583,8 +647,9 @@ contract LinearBondingTokenTest is Test {
         vm.deal(bob, 10 ether);
 
         uint256 gasStart = gasleft();
+        uint256 expectedTokens = token.calculateTokensForEth(0.01 ether);
         vm.prank(bob);
-        token.mintTokensWithEth{value: 0.01 ether}();
+        token.mintTokens{value: 0.01 ether}(expectedTokens, expectedTokens);
         uint256 gasUsed = gasStart - gasleft();
 
         console2.log("Gas used for small transaction:", gasUsed);
@@ -600,8 +665,9 @@ contract LinearBondingTokenTest is Test {
         vm.deal(bob, 100 ether);
 
         uint256 gasStart = gasleft();
+        uint256 expectedTokens = token.calculateTokensForEth(10 ether);
         vm.prank(bob);
-        token.mintTokensWithEth{value: 10 ether}();
+        token.mintTokens{value: 10 ether}(expectedTokens, expectedTokens);
         uint256 gasUsed = gasStart - gasleft();
 
         console2.log("Gas used for large transaction:", gasUsed);
@@ -617,8 +683,9 @@ contract LinearBondingTokenTest is Test {
         vm.deal(bob, 10 ether);
 
         // First buy some tokens
+        uint256 expectedTokens = token.calculateTokensForEth(1 ether);
         vm.prank(bob);
-        token.mintTokensWithEth{value: 1 ether}();
+        token.mintTokens{value: 1 ether}(expectedTokens, expectedTokens);
 
         uint256 balance = token.balanceOf(bob);
         uint256 burnAmount = balance / 2;
@@ -640,8 +707,9 @@ contract LinearBondingTokenTest is Test {
 
         for (uint256 i = 0; i < 5; i++) {
             uint256 gasStart = gasleft();
+            uint256 expectedTokens = token.calculateTokensForEth(0.1 ether);
             vm.prank(bob);
-            token.mintTokensWithEth{value: 0.1 ether}();
+            token.mintTokens{value: 0.1 ether}(expectedTokens, expectedTokens);
             uint256 gasUsed = gasStart - gasleft();
             totalGasUsed += gasUsed;
         }

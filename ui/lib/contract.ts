@@ -33,8 +33,10 @@ export const linearBondingTokenAbi = [
 
   // Write functions (for future use)
   { type: "function", stateMutability: "nonpayable", name: "approve", inputs: [{ name: "spender", type: "address" }, { name: "amount", type: "uint256" }], outputs: [{ type: "bool" }] },
-  { type: "function", stateMutability: "payable", name: "mintTokens", inputs: [{ name: "amount", type: "uint256" }], outputs: [] },
-  { type: "function", stateMutability: "payable", name: "mintTokensWithEth", inputs: [], outputs: [] },
+  { type: "function", stateMutability: "payable", name: "mintTokens", inputs: [
+      { name: "amount", type: "uint256" },
+      { name: "minTokenOut", type: "uint256" }
+    ], outputs: [] },
   { type: "function", stateMutability: "nonpayable", name: "burnTokens", inputs: [{ name: "amount", type: "uint256" }], outputs: [] },
 ] as const;
 
@@ -94,17 +96,12 @@ export async function readAllowance(client: PublicClient, owner: Address, spende
 
 type WriteDeps = { publicClient: PublicClient; walletClient: WalletClient; account: Address; address?: Address };
 
-export async function writeMintTokens({ publicClient, walletClient, account, amount, value, address = getContractAddress() }: WriteDeps & { amount: bigint; value: bigint }) {
-  const { request } = await publicClient.simulateContract({ address, abi: linearBondingTokenAbi, functionName: "mintTokens", args: [amount], account, value });
+export async function writeMintTokens({ publicClient, walletClient, account, amount, minTokenOut, value, address = getContractAddress() }: WriteDeps & { amount: bigint; minTokenOut: bigint; value: bigint }) {
+  const { request } = await publicClient.simulateContract({ address, abi: linearBondingTokenAbi, functionName: "mintTokens", args: [amount, minTokenOut], account, value });
   const hash = await walletClient.writeContract(request);
   return publicClient.waitForTransactionReceipt({ hash });
 }
 
-export async function writeMintTokensWithEth({ publicClient, walletClient, account, value, address = getContractAddress() }: WriteDeps & { value: bigint }) {
-  const { request } = await publicClient.simulateContract({ address, abi: linearBondingTokenAbi, functionName: "mintTokensWithEth", args: [], account, value });
-  const hash = await walletClient.writeContract(request);
-  return publicClient.waitForTransactionReceipt({ hash });
-}
 
 export async function writeBurnTokens({ publicClient, walletClient, account, amount, address = getContractAddress() }: WriteDeps & { amount: bigint }) {
   const { request } = await publicClient.simulateContract({ address, abi: linearBondingTokenAbi, functionName: "burnTokens", args: [amount], account });

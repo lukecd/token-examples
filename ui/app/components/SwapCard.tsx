@@ -33,6 +33,7 @@ export function SwapCard({ baseLabel, quoteLabel }: SwapCardProps) {
   const [estimatedEth, setEstimatedEth] = useState("");
   const [rateForOneEth, setRateForOneEth] = useState("");
   const [isBuyMode, setIsBuyMode] = useState(true);
+  const [slippagePct, setSlippagePct] = useState<string>("1.0"); // default 1%
 
   // Calculate rate for 1 ETH (this should be constant)
   useEffect(() => {
@@ -66,7 +67,7 @@ export function SwapCard({ baseLabel, quoteLabel }: SwapCardProps) {
 
     try {
       if (isBuyMode) {
-        await buyTokens(ethAmount, "0"); // No slippage protection for now
+        await buyTokens(ethAmount, slippagePct);
         setEthAmount("");
         setEstimatedTokens("");
       } else {
@@ -179,6 +180,23 @@ export function SwapCard({ baseLabel, quoteLabel }: SwapCardProps) {
                   className="input input-bordered w-full"
                   value={estimatedTokens ? formatNumber(parseFloat(estimatedTokens)) : ""}
                   readOnly
+                />
+              </label>
+
+              <label className="form-control w-full">
+                <div className="label">
+                  <span className="label-text">Slippage (%)</span>
+                  <span className="label-text-alt">Recommended: 1.0</span>
+                </div>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  placeholder="1.0"
+                  className="input input-bordered w-full"
+                  value={slippagePct}
+                  onChange={(e) => setSlippagePct(e.target.value)}
+                  disabled={isTransactionLoading}
                 />
               </label>
             </>
