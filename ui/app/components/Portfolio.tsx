@@ -60,7 +60,7 @@ export function Portfolio() {
           </div>
           <div>
             <p className="text-base-content/60">Net Worth</p>
-            <p className="font-medium">{formatNumber(netWorth)} ETH</p>
+            <p className="font-medium">{formatNumber(netWorth)} TIA</p>
           </div>
         </div>
       </div>

@@ -131,7 +131,7 @@ export function TokenMetaCard() {
           </div>
           <div>
             <p className="text-base-content/60">Initial Price</p>
-            <p className="font-medium">{formatEther(data.initialPrice)} ETH</p>
+            <p className="font-medium">{formatEther(data.initialPrice)} TIA</p>
           </div>
           <div>
             <p className="text-base-content/60">Slope</p>
@@ -139,7 +139,7 @@ export function TokenMetaCard() {
           </div>
           <div>
             <p className="text-base-content/60">Current Price</p>
-            <p className="font-medium">{formatEther(data.currentPrice)} ETH</p>
+            <p className="font-medium">{formatEther(data.currentPrice)} TIA</p>
           </div>
         </div>
       </div>

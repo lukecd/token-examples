@@ -79,12 +79,12 @@ export function useUserBalance() {
   };
 }
 
-export function useUserEthBalance() {
+export function useUserTiaBalance() {
   const publicClient = usePublicClient();
   const { address } = useAccount();
 
-  const { data: ethBalance, isLoading, error } = useQuery({
-    queryKey: ["userEthBalance", address],
+  const { data: tiaBalance, isLoading, error } = useQuery({
+    queryKey: ["userTiaBalance", address],
     queryFn: async () => {
       if (!publicClient || !address) throw new Error("No public client or address");
       const balance = await publicClient.getBalance({ address });
@@ -94,5 +94,5 @@ export function useUserEthBalance() {
     refetchInterval: 10000, // Refetch every 10 seconds
   });
 
-  return { ethBalance, isLoading, error };
+  return { tiaBalance, isLoading, error };
 }

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useContractWrite } from "../hooks/useContractWrite";
-import { useUserBalance, useUserEthBalance } from "../hooks/useContractData";
+import { useUserBalance, useUserTiaBalance } from "../hooks/useContractData";
 import { formatNumber } from "../../lib/format";
 import TVStaticGlitch from "./TVStaticGlitch";
 
@@ -13,13 +13,13 @@ type SwapCardProps = {
 
 export function SwapCard({ baseLabel, quoteLabel }: SwapCardProps) {
   const { balance: userBalance } = useUserBalance();
-  const { ethBalance: userEthBalance } = useUserEthBalance();
+  const { tiaBalance: userTiaBalance } = useUserTiaBalance();
   const {
     buyTokens,
     sellTokens,
-    calculateTokensForEth,
-    calculateEthForTokens,
-    calculateRateForOneEth,
+    calculateTokensForTia,
+    calculateTiaForTokens,
+    calculateRateForOneTia,
     buyState,
     sellState,
     error,
@@ -27,37 +27,37 @@ export function SwapCard({ baseLabel, quoteLabel }: SwapCardProps) {
     isConnected,
   } = useContractWrite();
 
-  const [ethAmount, setEthAmount] = useState("");
+  const [tiaAmount, setTiaAmount] = useState("");
   const [tokenAmount, setTokenAmount] = useState("");
   const [estimatedTokens, setEstimatedTokens] = useState("");
-  const [estimatedEth, setEstimatedEth] = useState("");
-  const [rateForOneEth, setRateForOneEth] = useState("");
+  const [estimatedTia, setEstimatedTia] = useState("");
+  const [rateForOneTia, setRateForOneTia] = useState("");
   const [isBuyMode, setIsBuyMode] = useState(true);
   const [slippagePct, setSlippagePct] = useState<string>("1.0"); // default 1%
 
-  // Calculate rate for 1 ETH (this should be constant)
+  // Calculate rate for 1 TIA (this should be constant)
   useEffect(() => {
     const calculateRate = async () => {
-      const rate = await calculateRateForOneEth();
-      setRateForOneEth(rate);
+      const rate = await calculateRateForOneTia();
+      setRateForOneTia(rate);
     };
     calculateRate();
-  }, [calculateRateForOneEth]);
+  }, [calculateRateForOneTia]);
 
   // Calculate estimated output when input changes
   useEffect(() => {
     const calculateOutput = async () => {
-      if (isBuyMode && ethAmount) {
-        const tokens = await calculateTokensForEth(ethAmount);
+      if (isBuyMode && tiaAmount) {
+        const tokens = await calculateTokensForTia(tiaAmount);
         setEstimatedTokens(tokens);
       } else if (!isBuyMode && tokenAmount) {
-        const eth = await calculateEthForTokens(tokenAmount);
-        setEstimatedEth(eth);
+        const tia = await calculateTiaForTokens(tokenAmount);
+        setEstimatedTia(tia);
       }
     };
 
     calculateOutput();
-  }, [ethAmount, tokenAmount, isBuyMode, calculateTokensForEth, calculateEthForTokens]);
+  }, [tiaAmount, tokenAmount, isBuyMode, calculateTokensForTia, calculateTiaForTokens]);
 
   const handleSwap = async () => {
     if (!isConnected) {
@@ -67,13 +67,13 @@ export function SwapCard({ baseLabel, quoteLabel }: SwapCardProps) {
 
     try {
       if (isBuyMode) {
-        await buyTokens(ethAmount, slippagePct);
-        setEthAmount("");
+        await buyTokens(tiaAmount, slippagePct);
+        setTiaAmount("");
         setEstimatedTokens("");
       } else {
         await sellTokens(tokenAmount, "0"); // No slippage protection for now
         setTokenAmount("");
-        setEstimatedEth("");
+        setEstimatedTia("");
       }
     } catch (err) {
       console.error("Transaction failed:", err);
@@ -82,7 +82,7 @@ export function SwapCard({ baseLabel, quoteLabel }: SwapCardProps) {
 
   const isTransactionLoading = buyState === "loading" || sellState === "loading";
   const canSwap = isConnected && !isTransactionLoading && 
-    ((isBuyMode && ethAmount && parseFloat(ethAmount) > 0) || 
+    ((isBuyMode && tiaAmount && parseFloat(tiaAmount) > 0) || 
      (!isBuyMode && tokenAmount && parseFloat(tokenAmount) > 0));
 
   return (
@@ -97,7 +97,7 @@ export function SwapCard({ baseLabel, quoteLabel }: SwapCardProps) {
               onClick={() => {
                 setIsBuyMode(true);
                 setTokenAmount("");
-                setEstimatedEth("");
+                setEstimatedTia("");
                 resetStates();
               }}
             >
@@ -107,7 +107,7 @@ export function SwapCard({ baseLabel, quoteLabel }: SwapCardProps) {
               className={`btn btn-sm ${!isBuyMode ? 'btn-primary' : 'btn-ghost'}`}
               onClick={() => {
                 setIsBuyMode(false);
-                setEthAmount("");
+                setTiaAmount("");
                 setEstimatedTokens("");
                 // Pre-fill with user's NAT balance
                 if (userBalance && parseFloat(userBalance) > 0) {
@@ -143,9 +143,9 @@ export function SwapCard({ baseLabel, quoteLabel }: SwapCardProps) {
               <label className="form-control w-full">
                 <div className="label">
                   <span className="label-text">From ({quoteLabel})</span>
-                  {userEthBalance && parseFloat(userEthBalance) > 0 && (
+                  {userTiaBalance && parseFloat(userTiaBalance) > 0 && (
                     <span className="label-text-alt text-primary">
-                      Balance: {formatNumber(parseFloat(userEthBalance))} {quoteLabel}
+                      Balance: {formatNumber(parseFloat(userTiaBalance))} {quoteLabel}
                     </span>
                   )}
                 </div>
@@ -154,15 +154,15 @@ export function SwapCard({ baseLabel, quoteLabel }: SwapCardProps) {
                     type="number"
                     placeholder="0.0"
                     className="input input-bordered flex-1"
-                    value={ethAmount}
-                    onChange={(e) => setEthAmount(e.target.value)}
+                    value={tiaAmount}
+                    onChange={(e) => setTiaAmount(e.target.value)}
                     disabled={isTransactionLoading}
                   />
-                  {userEthBalance && parseFloat(userEthBalance) > 0 && (
+                  {userTiaBalance && parseFloat(userTiaBalance) > 0 && (
                     <button
                       type="button"
                       className="btn btn-outline btn-sm"
-                      onClick={() => setEthAmount(userEthBalance)}
+                      onClick={() => setTiaAmount(userTiaBalance)}
                       disabled={isTransactionLoading}
                     >
                       Max
@@ -240,7 +240,7 @@ export function SwapCard({ baseLabel, quoteLabel }: SwapCardProps) {
                   type="text"
                   placeholder="0.0"
                   className="input input-bordered w-full"
-                  value={estimatedEth ? formatNumber(parseFloat(estimatedEth)) : ""}
+                  value={estimatedTia ? formatNumber(parseFloat(estimatedTia)) : ""}
                   readOnly
                 />
               </label>
@@ -249,9 +249,9 @@ export function SwapCard({ baseLabel, quoteLabel }: SwapCardProps) {
 
           <div className="text-sm text-base-content/60">
             {isBuyMode ? (
-              <>Rate: 1 {quoteLabel} = {rateForOneEth ? formatNumber(parseFloat(rateForOneEth)) : "—"} {baseLabel}</>
+              <>Rate: 1 {quoteLabel} = {rateForOneTia ? formatNumber(parseFloat(rateForOneTia)) : "—"} {baseLabel}</>
             ) : (
-              <>Rate: 1 {baseLabel} = {estimatedEth && tokenAmount ? formatNumber(parseFloat(estimatedEth) / parseFloat(tokenAmount)) : "—"} {quoteLabel}</>
+              <>Rate: 1 {baseLabel} = {estimatedTia && tokenAmount ? formatNumber(parseFloat(estimatedTia) / parseFloat(tokenAmount)) : "—"} {quoteLabel}</>
             )}
           </div>
 

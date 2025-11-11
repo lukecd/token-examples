@@ -18,13 +18,13 @@ export default function Home() {
       <main className="max-w-5xl mx-auto space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <TokenMetaCard />
-          <SwapCard baseLabel="NAT" quoteLabel="ETH" />
+          <SwapCard baseLabel="NAT" quoteLabel="TIA" />
         </div>
         <Portfolio />
       </main>
-      <footer className="max-w-5xl mx-auto mt-8 text-center">
-        <p className="text-sm text-base-content/60">
-          This is a demo environment for educational purposes. All tokens are testnet-only and have no real value.
+      <footer className="max-w-5xl mx-auto mt-1 text-center  bg-white rounded-lg p-4">
+        <p className="text-sm font-bold text-base-content/60">
+          This is a demo app for educational purposes. All tokens are testnet-only and have no real value.
         </p>
       </footer>
     </div>

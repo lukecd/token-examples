@@ -30,6 +30,7 @@ export const linearBondingTokenAbi = [
   { type: "function", stateMutability: "view", name: "getCurrentPrice", inputs: [], outputs: [{ type: "uint256" }] },
   { type: "function", stateMutability: "view", name: "calculateCost", inputs: [{ name: "amount", type: "uint256" }], outputs: [{ type: "uint256" }] },
   { type: "function", stateMutability: "view", name: "calculateRefund", inputs: [{ name: "amount", type: "uint256" }], outputs: [{ type: "uint256" }] },
+  { type: "function", stateMutability: "view", name: "calculateTokensForTia", inputs: [{ name: "tiaAmount", type: "uint256" }], outputs: [{ type: "uint256" }] },
 
   // Write functions (for future use)
   { type: "function", stateMutability: "nonpayable", name: "approve", inputs: [{ name: "spender", type: "address" }, { name: "amount", type: "uint256" }], outputs: [{ type: "bool" }] },
@@ -80,6 +81,10 @@ export async function readCalculateCost(client: PublicClient, amount: bigint, ad
 
 export async function readCalculateRefund(client: PublicClient, amount: bigint, address = getContractAddress()) {
   return client.readContract({ address, abi: linearBondingTokenAbi, functionName: "calculateRefund", args: [amount] });
+}
+
+export async function readCalculateTokensForTia(client: PublicClient, tiaAmount: bigint, address = getContractAddress()) {
+  return client.readContract({ address, abi: linearBondingTokenAbi, functionName: "calculateTokensForTia", args: [tiaAmount] });
 }
 
 export async function readBalanceOf(client: PublicClient, owner: Address, address = getContractAddress()) {
