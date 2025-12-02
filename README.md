@@ -9,7 +9,7 @@ This repo contains examples demonstrating how to create and interact with **bond
 - Building a React/Next.js interface for token trading
 - Connecting smart contracts to web interfaces using Next.js
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 ├── contracts/         # Solidity smart contracts and tests
@@ -23,7 +23,7 @@ This repo contains examples demonstrating how to create and interact with **bond
 └── README.md          # This file
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -75,7 +75,7 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) to view the application.
 
-## 🧮 Understanding Bonding Curves
+## Understanding Bonding Curves
 
 ### What is a Bonding Curve?
 
@@ -89,23 +89,11 @@ A bonding curve is a mathematical function that determines token price based on 
 - **Price Predictability**: Calculate exact costs before trading
 - **Bootstrap Liquidity**: Create liquid markets from day one
 
-### Linear Bonding Curve Formula
-
-```
-Price = Initial Price + (Slope × Total Supply)
-```
-
-When buying `N` tokens from current supply `S`:
-
-```
-Cost = (Slope × S × N) + (Slope × N² / 2) + (Initial Price × N)
-```
-
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - [OpenZeppelin](https://openzeppelin.com/) for secure contract libraries
 - [Foundry](https://book.getfoundry.sh/) for the excellent development framework
