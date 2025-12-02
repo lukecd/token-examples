@@ -1,18 +1,18 @@
 # Bonding Curve Token Examples
 
-This repository contains educational examples demonstrating how to create and interact with **bonding curve tokens** on Ethereum. Bonding curves provide a novel way to price tokens based on supply, eliminating the need for traditional liquidity pools.
+This repo contains examples demonstrating how to create and interact with **bonding curve tokens** on Ethereum or any EVM-compatible chain. Use bonding curves to price tokens based on supply, eliminating the need for traditional liquidity pools.
 
-## 🎯 What You'll Learn
+## What You'll Learn
 
-- **Smart Contract Development**: How to implement bonding curve pricing in Solidity
-- **Mathematical Concepts**: Understanding linear bonding curves and price discovery
-- **Frontend Integration**: Building a React/Next.js interface for token trading
-- **Web3 Development**: Connecting smart contracts to modern web applications
+- How to implement bonding curve pricing in Solidity
+- Understanding linear bonding curves and price discovery
+- Building a React/Next.js interface for token trading
+- Connecting smart contracts to web interfaces using Next.js
 
 ## 📁 Project Structure
 
 ```
-├── contracts/          # Solidity smart contracts and tests
+├── contracts/         # Solidity smart contracts and tests
 │   ├── src/           # Contract source code
 │   ├── test/          # Foundry test suite
 │   └── script/        # Deployment scripts
@@ -49,12 +49,6 @@ forge install
 
 ```bash
 forge test
-```
-
-**Deploy to local network:**
-
-```bash
-forge script script/DeployLinearBondingToken.s.sol --rpc-url http://localhost:8545 --broadcast
 ```
 
 For detailed contract documentation, see [`contracts/README.md`](./contracts/README.md).
@@ -107,16 +101,6 @@ When buying `N` tokens from current supply `S`:
 Cost = (Slope × S × N) + (Slope × N² / 2) + (Initial Price × N)
 ```
 
-## 🤝 Contributing
-
-This is an educational project! Contributions are welcome:
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests for new functionality
-5. Submit a pull request
-
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
@@ -127,9 +111,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Foundry](https://book.getfoundry.sh/) for the excellent development framework
 - [Next.js](https://nextjs.org/) for the React framework
 - The Ethereum community for bonding curve research and implementations
-
----
-
-**Happy Learning!** 🚀
-
-Start with the smart contracts in `contracts/` to understand the core mechanics, then explore the UI in `ui/` to see how everything comes together in a real application.

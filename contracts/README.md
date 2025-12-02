@@ -1,8 +1,8 @@
 # Linear Bonding Token
 
-An ERC20 token with a linear bonding curve pricing. This contract allows users to buy and sell tokens at prices that increase linearly with the total supply, creating a fair and predictable price discovery mechanism.
+This contract allows users to buy and sell tokens at prices that increase linearly with the total supply, creating a fair and predictable price discovery mechanism.
 
-## 🎯 What is a Bonding Curve?
+##What is a Bonding Curve?
 
 A bonding curve is a mathematical function that determines the price of a token based on its supply. In this implementation, we use a **linear bonding curve**, where the price increases linearly as more tokens are bought.
 
@@ -371,9 +371,3 @@ For questions or issues:
 - Open an issue on GitHub
 - Check the test files for usage examples
 - Review the contract code for implementation details
-
----
-
-**Built with ❤️ for the DeFi community**
-
-_This implementation provides a robust, secure, and efficient linear bonding curve token for educational and production use._
