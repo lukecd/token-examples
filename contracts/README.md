@@ -22,7 +22,6 @@ The repository contains:
 
 - `contracts/` — Solidity implementation
 - `contracts/test/` — Foundry-based tests
-- `ui/` — web interface built with Next.js
 
 > This tutorial focuses only on the contract logic. If you want to see how the front end interacts
 > with the contract, check out the [`/ui` folder](/ui/README.md)
@@ -53,11 +52,10 @@ Instead of looping, we treat the entire mint or burn as one smooth move along a 
 
 ![Linear bonding curve](assets/tokenBondingCurveTrap.png)
 
-At first, that shape looks like a trapezoid, and you probably remember from geometry class the formula area of a trapezoid is $A = \frac{1}{2} \times (b_1 + b_2) \times h$, but we can make it easier than that. If you slice off the small triangle at one end and flip it over, it fills the gap on the other side and turns the trapezoid into a perfect rectangle. So the total cost is simply the **average price** times the **number of tokens**.
-
-![Linear bonding curve](assets/tokenBondingCurves.gif)
+At first, that shape looks like a trapezoid, and you probably remember from geometry class the formula area of a trapezoid is $A = \frac{1}{2} \times (b_1 + b_2) \times h$, but we can make it easier than that. If you divide the trapezoid in half vertically (the average price), then slice off the small triangle on the far end and flip it over, it fills the gap on the other side. This turns the trapezoid into a perfect rectangle. So the total cost is simply the area of the rectangle, the height (the **average price**) times the width (the **number of tokens**).
 
 <br/>
+
 $$
 \begin{align*}
 \text{totalCost} &= \text{height} \times \text{width} \\\\
@@ -65,6 +63,8 @@ $$
                  &= \frac{p_\text{start} + p_\text{end}}{2} \times \text{numberOfTokens}
 \end{align*}
 $$
+
+![Linear bonding curve](assets/tokenBondingCurves.gif)
 
 That’s it. No loops, no calculus, just the midpoint of a line times its width. Burning works the same way but in reverse: the same rectangle, just sliding back down the line.
 
