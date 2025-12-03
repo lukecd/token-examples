@@ -33,7 +33,7 @@ Every ERC-20 token you’ve heard of implements this same interface. The differe
 
 ## Units and decimals
 
-Tokens operate using **atomic units**, the smallest indivisible pieces of value onchain. For TIA and most ERC-20 tokens, this means **18 decimal places**. One whole token equals `1e18` atomic units. This system allows precise accounting, even for fractional amounts.
+Tokens operate using **atomic units**, the smallest indivisible pieces of value onchain. For most ERC-20 tokens, this means **18 decimal places**. One whole token equals `1e18` atomic units. This system allows precise accounting, even for fractional amounts.
 
 For example:
 
@@ -52,7 +52,7 @@ event Transfer(address indexed from, address indexed to, uint256 value);
 event Approval(address indexed owner, address indexed spender, uint256 value);
 ```
 
-These events don’t alter contract storage; they’re lightweight logs recorded on the blockchain. [Indexers](/tooling/indexers/overview), explorers, and [wallets](/tooling/wallets) watch for them to track token movements and update user interfaces.
+These events don’t alter contract storage; they’re lightweight logs recorded on the blockchain. Indexers, explorers, and wallets watch them to track token movements and update user interfaces.
 
 ## Reactivity and external triggers
 
@@ -97,7 +97,7 @@ myToken.transfer(0xRecipient, 100 * 1e18);
 
 Here, your wallet signs a message that says, “update the balance mapping: subtract 100 from me, add 100 to the recipient.” The contract then verifies your signature and updates its internal record.
 
-Things work a bit differently when interacting with **other smart contracts** (like [vaults](/tooling/vaults/overview) or DEXes). A smart contract can’t initiate its own transfe, it can only move tokens that you’ve explicitly approved it to access. That’s why ERC-20 includes the **approve → transferFrom** pattern:
+Things work a bit differently when interacting with **other smart contracts** (like vaults or DEXes). A smart contract can’t initiate its own transfer, it can only move tokens that you’ve explicitly approved it to access. That’s why ERC-20 includes the **approve → transferFrom** pattern:
 
 ```solidity
 // You approve another contract to use some of your tokens
