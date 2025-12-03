@@ -1,5 +1,3 @@
-import { Callout, Steps } from 'nextra/components'
-
 # Tokens 101: Understanding ERC-20
 
 Tokens are the **heart of the EVM ecosystem**. Almost everything onchain (payments, governance, liquidity, even memes) is built on top of tokens. For developers coming from web2, you can think of tokens as the native data type of value: they represent balances tracked by a smart contract rather than by a centralized database.
